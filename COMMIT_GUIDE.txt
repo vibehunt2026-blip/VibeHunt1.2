@@ -1,0 +1,89 @@
+Diretrizes Oficiais de Commits Git - Projeto VibeHunt
+Este documento estabelece o padrão de mensagens de commit para o projeto VibeHunt, garantindo rastreabilidade, clareza e organização no histórico do Git.
+
+---
+
+📌 1. Estrutura Padrão
+Todas as mensagens de commit devem seguir a convenção de Conventional Commits:
+
+`tipo(escopo): [ID_Tarefa] Descrição clara e concisa em português`
+
+• tipo: O que foi feito (feat, fix, refactor, etc.).
+
+• escopo (opcional): A área do código afetada (ex: home, profile, nav).
+
+• ID_Tarefa (opcional): O número ou identificador da tarefa/diagnóstico.
+
+• Descrição: O que mudou e porquê (no presente ou infinitivo).
+
+---
+
+🏷️ 2. Tipos de Commits Permitidos
+✨ `feat` (Novas Funcionalidades)
+
+Usado quando se adiciona algo novo ao utilizador ou ao sistema.
+
+• Exemplo: `git commit -m "feat(tema): [1] Adicionar pré-visualização de cores"`
+
+🐛 `fix` (Correção de Bugs)
+
+Usado para resolver comportamentos anómalos, quebras de layout ou crashes.
+
+• Exemplo: `git commit -m "fix(web): [2] Resolver bloqueio de scroll na HomeScreen"`
+
+• Exemplo: `git commit -m "fix(ios): [3] Corrigir tela preta no iPhone"`
+
+📂 `refactor` (Refatoração)
+
+Mudanças no código que não alteram o comportamento visual nem corrigem bugs (ex: mover ficheiros, renomear variáveis).
+
+• Exemplo: `git commit -m "refactor(pastas): [4] Organizar arquitetura na pasta src"`
+
+⚙️ `chore` (Tarefas de Manutenção)
+
+Atualização de dependências, configuração de ferramentas de build, `.gitignore`, etc.
+
+• Exemplo: `git commit -m "chore(deps): [5] Instalar expo-blur"`
+
+📝 `docs` (Documentação)
+
+Alterações apenas no README ou outros ficheiros de texto.
+
+• Exemplo: `git commit -m "docs(readme): [6] Atualizar guia de instalação"`
+
+---
+
+🚀 3. Boas Práticas e Fluxo de Trabalho
+1. Um problema por Commit: Não misture correções de Web com iOS no mesmo commit. Faça commits pequenos e frequentes.
+
+2. Faça `git add` antes: O Git só guarda o que foi adicionado à área de preparação.
+
+3. Sincronize com o GitHub: Lembre-se de enviar as suas alterações locais para a nuvem.
+
+Comandos Frequentes:
+
+```
+
+git add .
+
+git commit -m "fix(escopo): [ID] descrição"
+
+git push origin main
+
+```
+---
+
+🛠️ 4. Regra para Tarefas Complexas (Múltiplos Ficheiros)
+Quando uma única tarefa exige a alteração de vários ficheiros separados, usamos a notação de Ponto Decimal ou Sufixo de Letra:
+
+• `[ID_Tarefa.Numero_do_Ficheiro]` ou `[ID_Tarefa-Parte]`
+
+Desta forma, fica claro no log do Git que as alterações pertencem ao mesmo objetivo macro, mas foram separadas para manter o commit pequeno e legível.
+
+Exemplo prático para a Tarefa de Tema `[1]` que mexe em 3 ficheiros:
+
+1. Altera as opções visuais: `git commit -m "feat(tema): [1.1] Criar botões de rádio para as cores no modal"`
+
+2. Altera a lógica de Context: `git commit -m "feat(tema): [1.2] Adicionar lógica de estado temporário (preview)"`
+
+3. Altera a persistência: `git commit -m "feat(tema): [1.3] Gravar tema no AsyncStorage ao confirmar"`
