@@ -1,26 +1,21 @@
 // src/screens/MapScreen.js — com react-native-maps real
 //
-// ✦ Apple Maps no iOS  (gratuito, sem API key)
+// ✦ Apple Maps no iOS (gratuito, sem API key)
 // ✦ Google Maps no Android (precisa de API key no app.json)
 // ✦ Estilo escuro personalizado para combinar com o design da app
 // ✦ Eventos carregados do Supabase (fallback para mockData)
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Dimensions, Platform, ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ActivityIndicator, Dimensions, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme/colors';
-import { getEventsWithCoords } from '../../services/eventService';
+import { getEventsWithCoords } from '../services/Eventservice';
 
 const { width } = Dimensions.get('window');
 
 const FILTERS = ['Todos', '🎵 Música', '🎨 Arte', '💃 Festa', '🧘 Bem-estar', '🍕 Gastro'];
 
-// Região inicial centrada no Porto
 const PORTO_REGION = {
   latitude:      41.1496,
   longitude:    -8.6109,
@@ -28,7 +23,6 @@ const PORTO_REGION = {
   longitudeDelta: 0.07,
 };
 
-// Cor de cada categoria para os pins
 const CATEGORY_COLOR = {
   'Música':      '#8B5CF6',
   'Arte':        '#EC4899',
@@ -39,7 +33,6 @@ const CATEGORY_COLOR = {
   'default':     '#8B5CF6',
 };
 
-// ─── Pin personalizado ────────────────────────────────────────────────────────
 function EventPin({ event, selected }) {
   const color = CATEGORY_COLOR[event.category] ?? CATEGORY_COLOR.default;
   const size  = selected ? 50 : 40;
@@ -61,13 +54,11 @@ function EventPin({ event, selected }) {
           {event.categoryIcon}
         </Text>
       </View>
-      {/* Sombra abaixo do pin */}
       <View style={[pin.shadow, { backgroundColor: color }]} />
     </View>
   );
 }
 
-// ─── MapScreen ────────────────────────────────────────────────────────────────
 export default function MapScreen() {
   const [activeFilter, setActiveFilter] = useState(0);
   const [events,       setEvents]       = useState([]);
@@ -89,11 +80,10 @@ export default function MapScreen() {
     }
   };
 
-  // Filtragem por categoria
   const filteredEvents = activeFilter === 0
     ? events
     : events.filter(e => {
-        const f = FILTERS[activeFilter].replace(/^[^\s]+\s/, ''); // retira emoji
+        const f = FILTERS[activeFilter].replace(/^[^\s]+\s/, '');
         return e.category === f;
       });
 
@@ -104,7 +94,7 @@ export default function MapScreen() {
     const ev = events.find(e => e.id === id);
     if (ev?.latitude && mapRef.current) {
       mapRef.current.animateToRegion({
-        latitude:      ev.latitude  - 0.008, // offset para card não tapar o pin
+        latitude:      ev.latitude  - 0.008,
         longitude:     ev.longitude,
         latitudeDelta:  0.035,
         longitudeDelta: 0.035,
@@ -146,7 +136,7 @@ export default function MapScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* ── Mapa ───────────────────────────────────────────────── */}
+      {/* ── Mapa Nativo Real para iOS / Android ── */}
       {loading ? (
         <View style={s.loadingWrap}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -160,7 +150,6 @@ export default function MapScreen() {
           initialRegion={PORTO_REGION}
           showsUserLocation
           showsMyLocationButton={false}
-          // Dark mode: iOS Apple Maps usa userInterfaceStyle, Android usa customMapStyle
           userInterfaceStyle="dark"
           customMapStyle={Platform.OS === 'android' ? DARK_MAP_STYLE : undefined}
         >
@@ -170,7 +159,7 @@ export default function MapScreen() {
                 key={ev.id}
                 coordinate={{ latitude: ev.latitude, longitude: ev.longitude }}
                 onPress={() => handleMarkerPress(ev.id)}
-                tracksViewChanges={false}  // importante para performance
+                tracksViewChanges={false}
               >
                 <EventPin event={ev} selected={selectedId === ev.id} />
               </Marker>
@@ -187,7 +176,6 @@ export default function MapScreen() {
             {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''} encontrado{filteredEvents.length !== 1 ? 's' : ''}
           </Text>
 
-          {/* Preview do evento seleccionado */}
           <TouchableOpacity style={s.preview} activeOpacity={0.88}>
             <View style={s.previewIcon}>
               <Text style={s.previewEmoji}>{selectedEvent.categoryIcon}</Text>
@@ -212,7 +200,6 @@ export default function MapScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {/* Carrossel de eventos */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -241,7 +228,6 @@ export default function MapScreen() {
   );
 }
 
-// ─── Estilo escuro para Google Maps (Android) ─────────────────────────────────
 const DARK_MAP_STYLE = [
   { elementType: 'geometry',            stylers: [{ color: '#1a1a2e' }] },
   { elementType: 'labels.text.fill',    stylers: [{ color: '#9ca3af' }] },
@@ -256,7 +242,6 @@ const DARK_MAP_STYLE = [
   { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#4b4b6e' }] },
 ];
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
 const pin = StyleSheet.create({
   wrap:   { alignItems: 'center' },
   bubble: {
@@ -273,7 +258,6 @@ const pin = StyleSheet.create({
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  // Header
   header: { backgroundColor: colors.bg, zIndex: 10 },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -300,7 +284,6 @@ const s = StyleSheet.create({
   chipText:      { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   chipTextActive: { color: colors.white },
 
-  // Map
   map: { flex: 1 },
   loadingWrap: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
@@ -308,7 +291,6 @@ const s = StyleSheet.create({
   },
   loadingText: { color: colors.textSecondary, fontSize: 14 },
 
-  // Bottom card
   bottomCard: {
     backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -322,7 +304,6 @@ const s = StyleSheet.create({
   },
   nearbyTitle: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
 
-  // Preview
   preview: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.bgCard2, borderRadius: radius.lg, padding: 12,
@@ -344,7 +325,6 @@ const s = StyleSheet.create({
   vibeEmoji: { fontSize: 12 },
   vibeText: { color: colors.accent, fontSize: 11, fontWeight: '700' },
 
-  // Mini chips carrossel
   chip2: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.full,
