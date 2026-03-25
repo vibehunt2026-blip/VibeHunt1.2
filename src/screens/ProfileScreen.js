@@ -140,7 +140,7 @@ function SettingsRow({ icon, label, value, danger, onPress }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ProfileScreen — componente principal exportado
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ProfileScreen({ userData, onOpenSetup, onThemePress, onEditBtnLayout }) {
+export default function ProfileScreen({ userData, onOpenSetup, onThemePress, onEditBtnLayout, onSignOut }) {
   // themeColors reage ao tema activo (claro/escuro) — vem do ThemeContext
   const { themeColors } = useTheme();
 
@@ -443,7 +443,7 @@ export default function ProfileScreen({ userData, onOpenSetup, onThemePress, onE
             <SettingsRow icon="help-circle-outline"        label="Ajuda & Suporte"  />
             <SettingsRow icon="information-circle-outline" label="Sobre o VibeHunt" />
             {/* danger=true aplica cor vermelha e remove o chevron */}
-            <SettingsRow icon="log-out-outline"            label="Terminar sessão" danger />
+            <SettingsRow icon="log-out-outline" label="Terminar sessão" danger onPress={onSignOut} />          
           </View>
         </View>
 
