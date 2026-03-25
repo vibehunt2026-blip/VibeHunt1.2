@@ -82,3 +82,26 @@ Registo cronológico de planeamento, decisões técnicas, desenvolvimento de ecr
   * Mudança imediata do tema em background ao clicar (Preview temporário).
   * Renderização condicional do botão "Confirmar" (apenas se o tema selecionado for diferente do atual).
   * Gravação definitiva na memória local (ex: `AsyncStorage`) apenas após a confirmação. Reversão do tema se o utilizador sair sem confirmar.
+
+  ---
+
+  ## 🗓️ Dia 25 de Março
+**Foco:** Resolução de Erros de Compilação (Metro Bundler), Padronização de Ficheiros (*Case-Sensitivity*) e Arquitetura Multiplataforma (Mobile vs Web).
+
+### 📖 Padronização e Arquitetura de Ficheiros
+* **Separação de Código por Plataforma (Extensão `.web.js`):**
+  * Criação do ficheiro `MapScreen.web.js` para renderizar um ecrã alternativo (*fallback*) no browser do PC.
+  * Isolamento do código nativo do telemóvel no `MapScreen.js` tradicional, permitindo que a aplicação compile no PC sem erros do Webpack.
+* **Configuração de Sensibilidade a Maiúsculas (*Case-Sensitivity* no Mac):**
+  * Diagnóstico de conflitos entre o Git e o macOS no registo de ficheiros alterados (ex: `AuthScreen.js` vs `Authscreen.js`).
+  * Utilização do comando `git add .` para forçar o rastreio correto de ficheiros modificados e recomendação do `git config core.ignorecase false`.
+
+### 🐛 Resolução de Bugs e Otimizações (Estabilidade e Módulos)
+* **Remoção de Módulos Nativos Incompatíveis:**
+  * Remoção do plugin `react-native-maps` do `app.json` que estava a quebrar a inicialização global do Expo.
+* **Correção de Erros de Módulos Não Resolvidos (*Unable to resolve module*):**
+  * Correção de caminhos relativos de importação que apontavam para pastas erradas (níveis de pastas `../` a mais ou a menos).
+  * Correção de nomes de ficheiros importados com letras maiúsculas/minúsculas inconsistentes (ex: `Eventservice.js` vs `EventService.js`).
+* **Resolução de Erros de Sintaxe e Imports Duplicados:**
+  * Limpeza de imports duplicados no topo do `MapScreen.js` que geravam o erro `Identifier 'View' has already been declared`.
+  * Correção de erros de chavetas JSX `{}` duplicadas no bloco de renderização condicional do Mapa.
