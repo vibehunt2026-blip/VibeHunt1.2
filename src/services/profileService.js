@@ -3,7 +3,7 @@
 // Todas as operações CRUD para a tabela profiles.
 // normalizeProfile converte snake_case (Supabase) → camelCase (app).
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 // ── Leitura ───────────────────────────────────────────────────────────────────
 export async function getProfile(userId) {
