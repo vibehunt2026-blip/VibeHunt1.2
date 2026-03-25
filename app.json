@@ -17,10 +17,21 @@
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0F"
       },
-      "package": "com.vibehunt.app"
+      "package": "com.vibehunt.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "A_TUA_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-maps",
+        {
+          "googleMapsApiKey": "A_TUA_GOOGLE_MAPS_API_KEY"
+        }
+      ]
     ]
   }
 }
