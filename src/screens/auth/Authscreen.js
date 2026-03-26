@@ -7,7 +7,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView,
-  ActivityIndicator, Alert, Animated,
+  ActivityIndicator, Alert, Animated, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -118,7 +118,11 @@ export default function AuthScreen() {
                 colors={[colors.primary, colors.secondary]}
                 style={s.logoGrad}
               >
-                <Text style={s.logoEmoji}>🎯</Text>
+                <Image 
+                  source={require('../../../assets/icon.png')} 
+                  style={s.logoImage}
+                  resizeMode="contain"
+                />
               </LinearGradient>
               <View style={s.logoGlow} />
             </View>
@@ -294,16 +298,16 @@ const s = StyleSheet.create({
   // Logo
   logoWrap: { position: 'relative', alignItems: 'center', marginBottom: spacing.md },
   logoGrad: {
-    width: 84, height: 84, borderRadius: 26,
+    width: 100, height: 100, borderRadius: 30,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.primary, shadowOpacity: 0.55,
     shadowRadius: 22, shadowOffset: { width: 0, height: 10 },
     elevation: 18,
   },
-  logoEmoji: { fontSize: 38 },
+  logoImage: { width: 160, height: 160 },
   logoGlow: {
-    position: 'absolute', width: 116, height: 116, borderRadius: 58,
-    backgroundColor: 'rgba(139,92,246,0.16)', top: -16, left: -16,
+    position: 'absolute', width: 130, height: 130, borderRadius: 65,
+    backgroundColor: 'rgba(139,92,246,0.16)', top: -15, left: -15,
   },
 
   appName: {
