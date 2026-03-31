@@ -26,7 +26,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen    from '../screens/HomeScreen';
-import MapScreen     from '../map/MapScreen';
+import MapScreen     from '../screens/MapScreen.web';
 import AlertsScreen  from '../screens/AlertsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';

@@ -4,7 +4,7 @@
 // Se a tabela estiver vazia ou houver erro, usa os mockEvents como fallback
 // para que a app funcione sempre durante desenvolvimento.
 
-import { supabase } from './apiClient';
+import { supabase } from '../../lib/supabase';
 import { mockEvents } from '../data/MockData';
 
 // ── Todos os eventos ──────────────────────────────────────────────────────────

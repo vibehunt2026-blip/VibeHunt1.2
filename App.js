@@ -21,14 +21,14 @@ import { ThemeProvider, useTheme }         from './src/context/ThemeContext';
 import { AuthProvider, useAuth }           from './src/context/AuthContext';
 import { getProfile, upsertProfile, normalizeProfile } from './src/services/ProfileService';
 
-import AuthScreen             from './src/profile/auth/auth/AuthScreen';
+import AuthScreen             from './src/screens/auth/AuthScreen';
 import OnboardingScreen       from './src/screens/onboarding/OnboardingScreen';
 import WelcomeAnimationScreen from './src/screens/onboarding/WelcomeAnimationScreen';
 import ProfileCoachOverlay    from './src/screens/onboarding/ProfileCoachOverlay';
 import EditButtonCoach        from './src/screens/onboarding/EditButtonCoach';
 import ProfileSetupScreen     from './src/screens/onboarding/ProfileSetupScreen';
 import ThemeSwitcherModal     from './src/components/ThemeSwitcherModal';
-import MainNavigator          from './src/app/MainNavigator';
+import MainNavigator          from './src/navigation/MainNavigator';
 
 export const navigationRef = createRef();
 
