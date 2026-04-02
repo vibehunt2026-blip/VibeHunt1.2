@@ -1,22 +1,57 @@
-// src/services/eventService.js
+// ─────────────────────────────────────────────────────────────────────────────
+// src/features/events/services/eventService.js
 //
-// Busca eventos do Supabase.
-// Se a tabela estiver vazia ou houver erro, usa os mockEvents como fallback
-// para que a app funcione sempre durante desenvolvimento.
+// Serviço de eventos — interface entre a app e o Supabase.
+//
+// Estratégia de fallback:
+//   Todas as funções tentam primeiro o Supabase. Se a tabela estiver vazia,
+//   o Supabase não estiver configurado, ou ocorrer qualquer erro de rede,
+//   o fallback automático para mockEvents garante que a app funciona sempre
+//   durante o desenvolvimento.
+//
+// Quando ligares ao Supabase real:
+//   1. Configura as variáveis de ambiente em .env (ver src/lib/supabase.js)
+//   2. Cria a tabela `events` com as colunas em normalizeEvent()
+//   3. Muda getEvents() de retorno directo de mock para query Supabase
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { supabase } from '../../../services/supabase';
+import { supabase } from '../../../../lib/supabase';
 import { mockEvents } from '../../../data/mockData';
 
 // ── Todos os eventos ──────────────────────────────────────────────────────────
-export function getEvents() {
-  return mockEvents
+// FIXME: Actualmente retorna mockData directamente (síncrono).
+// Quando o Supabase estiver configurado, substituir pelo bloco comentado abaixo.
+// A função JÁ é async para que todos os chamadores possam usar await
+// sem precisarem de ser alterados depois.
+export async function getEvents() {
+  // ── Versão Supabase (descomentar quando a tabela existir) ──────────────
+  // try {
+  //   const { data, error } = await supabase.from('events').select('*');
+  //   if (error || !data || data.length === 0) return mockEvents;
+  //   return data.map(normalizeEvent);
+  // } catch {
+  //   return mockEvents;
+  // }
+  // ──────────────────────────────────────────────────────────────────────
+
+  // Fallback de desenvolvimento — retorna os dados locais
+  return mockEvents;
 }
 
-export function checkInToEvent(eventId) {
-  return {
-    success: true,
-    xpEarned: 10,
-  }
+// ── Check-in num evento ───────────────────────────────────────────────────────
+// FIXME: Actualmente é mock. Implementar escrita na tabela `checkins` do Supabase.
+export async function checkInToEvent(eventId) {
+  // try {
+  //   const { error } = await supabase
+  //     .from('checkins')
+  //     .insert({ event_id: eventId, user_id: (await supabase.auth.getUser()).data.user.id });
+  //   if (error) throw error;
+  //   return { success: true, xpEarned: 10 };
+  // } catch (err) {
+  //   console.warn('[eventService] checkInToEvent error:', err.message);
+  //   return { success: false, xpEarned: 0 };
+  // }
+  return { success: true, xpEarned: 10 };
 }
 
 // ── Evento em destaque ────────────────────────────────────────────────────────
@@ -36,16 +71,24 @@ export async function getFeaturedEvent() {
   }
 }
 
-// ── Eventos com coordenadas (para o mapa) ─────────────────────────────────────
+// ── Eventos com coordenadas GPS (para o mapa) ─────────────────────────────────
 export async function getEventsWithCoords() {
   const events = await getEvents();
-  const withCoords = events.filter(e => e.latitude != null && e.longitude != null);
-  // Se os mockEvents não têm coords, adiciona coords de Porto manualmente
-  if (withCoords.length === 0) return attachMockCoords(events);
+  const withCoords = events.filter(
+    (e) => e.latitude != null && e.longitude != null
+  );
+
+  // Se os eventos (mock ou Supabase) não tiverem coordenadas,
+  // injeta coordenadas aproximadas do Porto para o mapa funcionar em dev.
+  if (withCoords.length === 0) {
+    return attachMockCoords(events);
+  }
   return withCoords;
 }
 
-// ── Normalização Supabase → App ───────────────────────────────────────────────
+// ── Normalização Supabase (snake_case) → App (camelCase) ─────────────────────
+// Garante que independentemente da fonte (Supabase ou mock),
+// o resto da app usa sempre a mesma estrutura de objecto.
 export function normalizeEvent(e) {
   return {
     id:           e.id,
@@ -66,15 +109,18 @@ export function normalizeEvent(e) {
     distance:     e.distance        ?? '',
     vibe:         e.vibe_emoji      ?? '✨',
     vibeScore:    e.vibe_score      ?? 75,
-    image:        e.image_url       ?? e.image ?? 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&q=80',
-    isFeatured:   e.is_featured     ?? e.isFeatured  ?? false,
-    isSaved:      false,
-    tags:         e.tags            ?? [],
+    image:
+      e.image_url ??
+      e.image ??
+      'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&q=80',
+    isFeatured: e.is_featured ?? e.isFeatured ?? false,
+    isSaved:    false,
+    tags:       e.tags ?? [],
   };
 }
 
-// ── Coordenadas aproximadas para os mockEvents (Porto) ────────────────────────
-// Usado apenas quando os dados do Supabase ainda não têm coords
+// ── Coordenadas aproximadas para mockEvents (Porto) ───────────────────────────
+// Usado apenas em modo de desenvolvimento quando os dados não têm coords.
 const MOCK_COORDS = [
   { latitude: 41.1579, longitude: -8.6291 }, // Casa da Música
   { latitude: 41.1494, longitude: -8.6058 }, // Bolhão

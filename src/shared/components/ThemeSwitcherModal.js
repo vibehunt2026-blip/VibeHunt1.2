@@ -1,48 +1,66 @@
-// src/components/ThemeSwitcherModal.js
+// ─────────────────────────────────────────────────────────────────────────────
+// src/shared/components/ThemeSwitcherModal.js
 //
-// Modal de selecção de tema com sistema de pré-visualização e confirmação.
+// Modal de selecção de tema com pré-visualização e confirmação em dois passos.
 //
 // Fluxo:
-//   1. O utilizador clica numa opção → applyPreview(id) → a app muda visualmente
-//   2. Aparece o botão "Guardar" se previewTheme !== currentTheme
-//   3. "Guardar"  → confirmTheme() → fecha o modal
-//   4. "Cancelar" → cancelPreview() → reverte e fecha o modal
+//   1. Utilizador clica numa opção → applyPreview(id) → app muda visualmente
+//   2. Botão "Guardar" aparece se previewTheme !== currentTheme
+//   3. "Guardar"  → confirmTheme() → fecha modal → tema persiste em AsyncStorage
+//   4. "Cancelar" → cancelPreview() → reverte tema → fecha modal
+//
+// CORRECÇÕES APLICADAS:
+//   - Import de useTheme corrigido: era '../../context/ThemeContext' (inexistente)
+//     agora usa o hook partilhado em '../hooks/useTheme' (caminho correcto)
+// ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, Animated, TouchableOpacity,
-  TouchableWithoutFeedback, Dimensions,
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
+import { LinearGradient }  from 'expo-linear-gradient';
+import { Ionicons }        from '@expo/vector-icons';
+
+// CORRIGIDO: era '../../context/ThemeContext' — ficheiro que não existia.
+// O hook foi consolidado em store/themeStore e re-exportado via shared/hooks.
+import { useTheme } from '../hooks/useTheme';
 import { radius, spacing } from '../theme/colors';
 
 const { width } = Dimensions.get('window');
 
+// ── Opções de tema disponíveis ────────────────────────────────────────────────
 const OPTIONS = [
   {
-    id: 'dark',
-    emoji: '🌙',
-    label: 'Escuro',
-    sub: 'Interface sombria',
-    bg: '#0A0A0F',
-    previewBg: '#141420',
-    previewBg2: '#1C1C2E',
-    lineColor: 'rgba(255,255,255,0.2)',
+    id:          'dark',
+    emoji:       '🌙',
+    label:       'Escuro',
+    sub:         'Interface sombria',
+    bg:          '#0A0A0F',
+    previewBg:   '#141420',
+    previewBg2:  '#1C1C2E',
+    lineColor:   'rgba(255,255,255,0.2)',
   },
   {
-    id: 'light',
-    emoji: '☀️',
-    label: 'Claro',
-    sub: 'Interface luminosa',
-    bg: '#F5F5FA',
-    previewBg: '#FFFFFF',
-    previewBg2: '#EBEBF5',
-    lineColor: 'rgba(0,0,0,0.12)',
+    id:          'light',
+    emoji:       '☀️',
+    label:       'Claro',
+    sub:         'Interface luminosa',
+    bg:          '#F5F5FA',
+    previewBg:   '#FFFFFF',
+    previewBg2:  '#EBEBF5',
+    lineColor:   'rgba(0,0,0,0.12)',
   },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ThemeSwitcherModal
+// ─────────────────────────────────────────────────────────────────────────────
 export default function ThemeSwitcherModal({ visible, onClose }) {
   const {
     currentTheme,
@@ -53,36 +71,40 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
     cancelPreview,
   } = useTheme();
 
-  // 'shouldRender' controla se o JSX existe.
-  // A saída anima ANTES de desmontar, evitando o bug do return null imediato.
+  // shouldRender controla a montagem do JSX.
+  // O modal anima a saída ANTES de ser desmontado, evitando o
+  // desaparecimento abrupto ao chamar return null imediatamente.
   const [shouldRender, setShouldRender] = useState(false);
 
-  const backdropOp  = useRef(new Animated.Value(0)).current;
-  const cardScale   = useRef(new Animated.Value(0.88)).current;
-  const cardOp      = useRef(new Animated.Value(0)).current;
-  // Animação do botão "Guardar"
-  const saveBtnOp   = useRef(new Animated.Value(0)).current;
-  const saveBtnY    = useRef(new Animated.Value(12)).current;
+  // Valores animados
+  const backdropOp = useRef(new Animated.Value(0)).current;
+  const cardScale  = useRef(new Animated.Value(0.88)).current;
+  const cardOp     = useRef(new Animated.Value(0)).current;
+  const saveBtnOp  = useRef(new Animated.Value(0)).current;
+  const saveBtnY   = useRef(new Animated.Value(12)).current;
 
+  // ── Monta o JSX quando visible passa a true ───────────────────────────────
   useEffect(() => {
-    if (visible) {
-      setShouldRender(true);
-    }
+    if (visible) setShouldRender(true);
   }, [visible]);
 
+  // ── Anima entrada e saída do card ─────────────────────────────────────────
   useEffect(() => {
     if (!shouldRender) return;
 
     if (visible) {
+      // Reinicia os valores antes de animar (evita flash em reaberturas)
       backdropOp.setValue(0);
       cardScale.setValue(0.88);
       cardOp.setValue(0);
+
       Animated.parallel([
         Animated.timing(backdropOp, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.spring(cardScale,  { toValue: 1, tension: 60, friction: 11, useNativeDriver: true }),
         Animated.timing(cardOp,     { toValue: 1, duration: 280, useNativeDriver: true }),
       ]).start();
     } else {
+      // Anima saída e só depois desmonta
       Animated.parallel([
         Animated.timing(backdropOp, { toValue: 0, duration: 220, useNativeDriver: true }),
         Animated.timing(cardOp,     { toValue: 0, duration: 180, useNativeDriver: true }),
@@ -91,7 +113,7 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
     }
   }, [visible, shouldRender]);
 
-  // ── Anima a entrada/saída do botão "Guardar" ─────────────────────────────
+  // ── Anima o botão "Guardar" quando há pré-visualização pendente ───────────
   useEffect(() => {
     if (isPreviewing) {
       Animated.parallel([
@@ -111,10 +133,8 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleSelect = (id) => {
-    // Só aplica preview se for diferente do tema em preview actual
-    if (id !== previewTheme) {
-      applyPreview(id);
-    }
+    // Só aplica preview se for diferente do tema actualmente em pré-visualização
+    if (id !== previewTheme) applyPreview(id);
   };
 
   const handleConfirm = async () => {
@@ -123,19 +143,22 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
   };
 
   const handleCancel = () => {
-    cancelPreview();   // reverte para o currentTheme
+    cancelPreview(); // reverte para currentTheme sem persistir
     onClose();
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={s.root}>
-      {/* Backdrop */}
+      {/* Backdrop escuro */}
       <Animated.View style={[s.backdrop, { opacity: backdropOp }]} />
+
+      {/* Toca fora do card para cancelar */}
       <TouchableWithoutFeedback onPress={handleCancel}>
         <View style={StyleSheet.absoluteFill} />
       </TouchableWithoutFeedback>
 
-      {/* Card */}
+      {/* Card principal */}
       <Animated.View
         style={[s.card, { opacity: cardOp, transform: [{ scale: cardScale }] }]}
       >
@@ -151,9 +174,9 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
         </View>
         <Text style={s.subtitle}>Escolhe a aparência da aplicação</Text>
 
-        {/* Opções */}
+        {/* Opções de tema */}
         <View style={s.optionsRow}>
-          {OPTIONS.map(opt => {
+          {OPTIONS.map((opt) => {
             const isCurrentSaved = currentTheme === opt.id;
             const isSelected     = previewTheme === opt.id;
             const isPendingThis  = isSelected && isPreviewing;
@@ -163,15 +186,15 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
                 key={opt.id}
                 style={[
                   s.option,
-                  isSelected && s.optionActive,
+                  isSelected    && s.optionActive,
                   isPendingThis && s.optionPending,
                 ]}
                 onPress={() => handleSelect(opt.id)}
                 activeOpacity={0.82}
               >
-                {/* Preview mini do tema */}
+                {/* Miniatura do tema */}
                 <View style={[s.preview, { backgroundColor: opt.bg }]}>
-                  <View style={[s.previewBar, { backgroundColor: opt.previewBg }]} />
+                  <View style={[s.previewBar,  { backgroundColor: opt.previewBg }]} />
                   <View style={[s.previewCard, { backgroundColor: opt.previewBg }]}>
                     <View style={[s.previewLine, { backgroundColor: opt.lineColor, width: '75%' }]} />
                     <View style={[s.previewLine, { backgroundColor: opt.lineColor, width: '50%' }]} />
@@ -181,21 +204,17 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
                   </View>
                 </View>
 
-                {/* Etiqueta */}
+                {/* Etiqueta com badge de estado */}
                 <View style={s.optionBottom}>
                   <Text style={s.optionEmoji}>{opt.emoji}</Text>
                   <Text style={[s.optionLabel, isSelected && s.optionLabelActive]}>
                     {opt.label}
                   </Text>
-
-                  {/* Badge de estado */}
                   {isPendingThis ? (
-                    // Pré-visualização activa — ainda não guardado
                     <View style={s.pendingBadge}>
                       <Text style={s.pendingBadgeText}>Preview</Text>
                     </View>
                   ) : isCurrentSaved && !isPreviewing ? (
-                    // Tema confirmado e activo
                     <View style={s.checkBadge}>
                       <Ionicons name="checkmark" size={11} color="#FFF" />
                     </View>
@@ -206,7 +225,7 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
           })}
         </View>
 
-        {/* ── Botão "Guardar" — aparece só quando há pré-visualização ─────── */}
+        {/* Botão "Guardar" — visível apenas com pré-visualização activa */}
         <Animated.View
           style={[
             s.saveBtnWrap,
@@ -231,7 +250,7 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* ── Botão Cancelar ────────────────────────────────────────────────── */}
+        {/* Botão Cancelar */}
         <TouchableOpacity style={s.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
           <Text style={s.cancelText}>
             {isPreviewing ? 'Cancelar pré-visualização' : 'Fechar'}
@@ -242,6 +261,9 @@ export default function ThemeSwitcherModal({ visible, onClose }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
@@ -269,16 +291,14 @@ const s = StyleSheet.create({
     gap: 12,
   },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-  },
+  header:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerIcon: {
     width: 34, height: 34, borderRadius: 10,
     backgroundColor: 'rgba(139,92,246,0.15)',
     alignItems: 'center', justifyContent: 'center',
   },
-  title:  { flex: 1, color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
-  closeX: {
+  title:    { flex: 1, color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
+  closeX:   {
     width: 30, height: 30, borderRadius: 15,
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center', justifyContent: 'center',
@@ -301,7 +321,6 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 6,
   },
-  // Borda laranja/âmbar quando está em preview mas ainda não confirmado
   optionPending: {
     borderColor: '#F59E0B',
     shadowColor: '#F59E0B',
@@ -311,11 +330,7 @@ const s = StyleSheet.create({
     elevation: 5,
   },
 
-  // Preview mini
-  preview: {
-    padding: 10, gap: 4,
-    minHeight: 90,
-  },
+  preview:     { padding: 10, gap: 4, minHeight: 90 },
   previewBar:  { height: 8, borderRadius: 4, width: '100%', marginBottom: 4 },
   previewCard: { borderRadius: 6, padding: 6, gap: 4 },
   previewLine: { height: 4, borderRadius: 2 },
@@ -325,30 +340,25 @@ const s = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 8, gap: 6,
     backgroundColor: 'rgba(0,0,0,0.15)',
   },
-  optionEmoji: { fontSize: 16 },
-  optionLabel: { flex: 1, color: '#9CA3AF', fontSize: 13, fontWeight: '600' },
+  optionEmoji:       { fontSize: 16 },
+  optionLabel:       { flex: 1, color: '#9CA3AF', fontSize: 13, fontWeight: '600' },
   optionLabelActive: { color: '#FFFFFF', fontWeight: '700' },
 
-  // Badge verde — tema confirmado
   checkBadge: {
     width: 18, height: 18, borderRadius: 9,
     backgroundColor: '#8B5CF6',
     alignItems: 'center', justifyContent: 'center',
   },
-  // Badge âmbar — em pré-visualização
   pendingBadge: {
     paddingHorizontal: 6, paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: 'rgba(245,158,11,0.2)',
     borderWidth: 1, borderColor: 'rgba(245,158,11,0.5)',
   },
-  pendingBadgeText: {
-    color: '#F59E0B', fontSize: 9, fontWeight: '800', letterSpacing: 0.3,
-  },
+  pendingBadgeText: { color: '#F59E0B', fontSize: 9, fontWeight: '800', letterSpacing: 0.3 },
 
-  // Botão "Guardar"
-  saveBtnWrap: { overflow: 'hidden', borderRadius: 14 },
-  saveBtn: { borderRadius: 14, overflow: 'hidden' },
+  saveBtnWrap:     { overflow: 'hidden', borderRadius: 14 },
+  saveBtn:         { borderRadius: 14, overflow: 'hidden' },
   saveBtnGradient: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8,
@@ -357,7 +367,6 @@ const s = StyleSheet.create({
   },
   saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
 
-  // Botão cancelar
   cancelBtn: {
     paddingVertical: 12,
     borderRadius: 14,

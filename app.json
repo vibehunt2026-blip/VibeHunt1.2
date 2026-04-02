@@ -23,9 +23,6 @@
           "apiKey": "A_TUA_GOOGLE_MAPS_API_KEY"
         }
       }
-    },
-    "plugins": [
-      "expo-router"
-    ]
+    }
   }
 }

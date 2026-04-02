@@ -1,25 +1,64 @@
+// ─────────────────────────────────────────────────────────────────────────────
 // src/navigation/RootNavigator.js
-import React from "react";
-import MainTabs from "./MainTabs";
-import OnboardingScreen from "../features/onboarding/screens/OnboardingScreen.js";
-import { useUser } from "../shared/hooks/useUser";
+//
+// Navegador raiz — decide se mostra o Onboarding ou as Tabs principais.
+//
+// Lógica:
+//   - Se user === null (store inicial) → mostra OnboardingScreen
+//   - Após onComplete(), setUser() actualiza o store → re-render automático
+//   - O utilizador vê as Tabs sem necessidade de navegação manual
+//
+// CORRECÇÕES APLICADAS:
+//   - Confirmado que useUser() expõe { user, setUser, resetUser }
+//   - Adicionado onSignOut ligado ao resetUser() do store
+//   - Removido comentário ambíguo "Supondo que..."
+// ─────────────────────────────────────────────────────────────────────────────
+
+import React, { useCallback } from 'react';
+import MainTabs          from './MainTabs';
+import OnboardingScreen  from '../features/onboarding/screens/OnboardingScreen';
+import { useUser }       from '../shared/hooks/useUser';
 
 export default function RootNavigator() {
-  const { user, setUser } = useUser(); // Supondo que o seu hook também exporte setUser
+  // useUser() retorna { user, setUser, resetUser, … } — ver src/store/userStore.js
+  const { user, setUser, resetUser } = useUser();
 
-  const handleOnboardingComplete = (userData) => {
-    // 1. Aqui você salva os dados no seu Store global
-    if (setUser) {
-      setUser(userData); 
-    }
-    // Ao atualizar o 'user', o componente fará re-render 
-    // e passará automaticamente para o <MainTabs />
-  };
+  // ── Callback chamado pelo OnboardingScreen ao terminar ────────────────────
+  // Usa useCallback para estabilidade de referência (evita re-renders desnecessários
+  // se RootNavigator for filho de algo que re-renderiza frequentemente).
+  const handleOnboardingComplete = useCallback((userData) => {
+    // Guarda os dados do onboarding no store global.
+    // Isto provoca um re-render do RootNavigator que passa a mostrar MainTabs.
+    setUser({
+      name:        userData.name        || 'Caçador',
+      interests:   userData.interests   || [],
+      schedule:    userData.schedule    || '',
+      exploration: userData.exploration || '',
+      xp:          50,   // XP inicial por completar o onboarding
+      level:       1,
+      savedEvents:    [],
+      checkedInEvents: [],
+      createdAt: new Date(),
+    });
+  }, [setUser]);
 
+  // ── Callback de logout ────────────────────────────────────────────────────
+  // Limpa o store → user volta a null → RootNavigator mostra OnboardingScreen
+  const handleSignOut = useCallback(() => {
+    resetUser();
+  }, [resetUser]);
+
+  // ── Render condicional ────────────────────────────────────────────────────
   if (!user) {
-    // AGORA PASSAMOS A FUNÇÃO:
     return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
 
-  return <MainTabs />;
+  return (
+    <MainTabs
+      userData={user}
+      onSignOut={handleSignOut}
+      // onOpenSetup e onThemePress são geridos internamente pelas Tabs
+      // e não precisam de ser propagados a partir daqui
+    />
+  );
 }
