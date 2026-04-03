@@ -20,6 +20,7 @@ import { supabase } from '../../../lib/supabase';
  * @throws {Error} Se a query falhar
  */
 export async function getProfile(userId) {
+  if (!supabase) throw new Error('Supabase não configurado');
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -40,6 +41,7 @@ export async function getProfile(userId) {
  * @throws {Error} Se a operação falhar
  */
 export async function upsertProfile(userId, profileData) {
+  if (!supabase) throw new Error('Supabase não configurado');
   const { data, error } = await supabase
     .from('profiles')
     .upsert(
