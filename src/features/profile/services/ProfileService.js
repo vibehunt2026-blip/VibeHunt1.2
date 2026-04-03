@@ -1,26 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // src/features/profile/services/ProfileService.js
-//
-// Operações CRUD para a tabela `profiles` do Supabase.
-//
-// Convenção de nomes:
-//   Supabase usa snake_case (birth_year, is_featured, …)
-//   A app usa camelCase (birthYear, isFeatured, …)
-//   A função normalizeProfile() faz a conversão numa só direcção.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// CORRIGIDO: caminho corrigido de '../../lib/supabase' para o caminho real
 import { supabase } from '../../../lib/supabase';
 
-// ── Leitura do perfil ─────────────────────────────────────────────────────────
-/**
- * Obtém o perfil de um utilizador pelo seu UUID de autenticação.
- * @param {string} userId - UUID do utilizador (auth.users.id)
- * @returns {Promise<Object>} Perfil normalizado
- * @throws {Error} Se a query falhar
- */
 export async function getProfile(userId) {
-  if (!supabase) throw new Error('Supabase não configurado');
+  if (!supabase) throw new Error('[VibeHunt] Supabase não configurado');
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -31,17 +14,9 @@ export async function getProfile(userId) {
   return normalizeProfile(data);
 }
 
-// ── Criação ou actualização do perfil ────────────────────────────────────────
-/**
- * Cria ou actualiza o perfil de um utilizador (upsert).
- * Usa onConflict: 'id' para garantir que não há duplicados.
- * @param {string} userId - UUID do utilizador
- * @param {Object} profileData - Dados em camelCase (formato da app)
- * @returns {Promise<Object>} Perfil normalizado após escrita
- * @throws {Error} Se a operação falhar
- */
 export async function upsertProfile(userId, profileData) {
-  if (!supabase) throw new Error('Supabase não configurado');
+  if (!supabase) throw new Error('[VibeHunt] Supabase não configurado');
+
   const { data, error } = await supabase
     .from('profiles')
     .upsert(
@@ -67,17 +42,8 @@ export async function upsertProfile(userId, profileData) {
   return normalizeProfile(data);
 }
 
-// ── Normalização Supabase → App ───────────────────────────────────────────────
-/**
- * Converte um registo raw do Supabase (snake_case) para o formato
- * usado internamente pela app (camelCase).
- * Retorna null se o input for null/undefined.
- * @param {Object|null} raw - Registo do Supabase
- * @returns {Object|null}
- */
 export function normalizeProfile(raw) {
   if (!raw) return null;
-
   return {
     id:          raw.id,
     name:        raw.name        || '',
