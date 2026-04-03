@@ -1,8 +1,8 @@
 export const mockUser = {
   id: 'u1',
-  name: 'João',
-  fullName: 'João Carvalho',
-  username: '@joaocarvalho',
+  name: 'VibeHunt',
+  fullName: 'VibeHunt',
+  username: '@vibehunt',
   avatar: 'https://i.pravatar.cc/150?img=3',
   level: 'Explorador Urbano',
   levelNum: 7,

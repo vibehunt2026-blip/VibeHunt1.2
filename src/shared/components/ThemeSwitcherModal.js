@@ -27,8 +27,6 @@ import {
 import { LinearGradient }  from 'expo-linear-gradient';
 import { Ionicons }        from '@expo/vector-icons';
 
-// CORRIGIDO: era '../../context/ThemeContext' — ficheiro que não existia.
-// O hook foi consolidado em store/themeStore e re-exportado via shared/hooks.
 import { useTheme } from '../hooks/useTheme';
 import { radius, spacing } from '../theme/colors';
 
