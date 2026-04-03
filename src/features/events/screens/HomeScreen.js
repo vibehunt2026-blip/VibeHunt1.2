@@ -30,7 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons }     from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, radius } from '../../../shared/theme/colors';
-import { EventCard } from '../../../shared/components/EventCard'; 
+import { EventCard, FeaturedEventCard, CompactEventCard, ListEventCard } from '../../../shared/components/EventCard';
 import { mockUser, mockFriends, mockEvents, mockMessages } from '../../../data/mockData';
 
 const { width } = Dimensions.get('window');

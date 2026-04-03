@@ -1,0 +1,10 @@
+--------------------- Melhoria em ThemeStore --------------------
+
+1. Sistema de "Tema do Sistema" (Auto Mode)
+Atualmente, o utilizador tem de escolher manualmente entre "Light" ou "Dark". 
+Uma melhoria comum é permitir que a app siga automaticamente as definições do telemóvel do utilizador.
+
+Como fazer: Usar o hook Appearance do React Native para detetar se o sistema está em modo escuro ou claro.
+
+Vantagem: Melhora a experiência do utilizador (UX), pois a app adapta-se ao horário ou às definições globais do dispositivo.
+
