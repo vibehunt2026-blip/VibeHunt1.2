@@ -1,120 +1,169 @@
-import React, { createContext, useContext, useState } from "react";
+// src/store/userStore.js
+//
+// Store global do utilizador.
+// Quando o Supabase está ligado, sincroniza automaticamente o perfil
+// e os check-ins. Quando está desligado (supabase = null), funciona
+// 100% em memória com mockData.
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../lib/supabase';
+import { upsertProfile, getProfile, addXPToProfile } from '../features/profile/services/ProfileService';
+import { checkInToEvent as checkInService, getUserCheckins } from '../features/events/services/eventService';
 
 const UserContext = createContext();
 
-// 🧠 estado inicial (facilita debug)
-const initialUser = null;
-// ou podes usar:
-// const initialUser = {
-//   name: "",
-//   interests: [],
-//   xp: 0,
-//   level: 1,
-//   savedEvents: [],
-//   checkedInEvents: [],
-// };
+// ── Gera um UUID v4 simples (sem dependências extra) ─────────────────────────
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+const DEVICE_ID_KEY = '@vibehunt_device_id';
+
+// Obtém ou cria um device_id persistente (substitui auth enquanto não há login)
+async function getOrCreateDeviceId() {
+  try {
+    const existing = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    if (existing) return existing;
+    const newId = generateUUID();
+    await AsyncStorage.setItem(DEVICE_ID_KEY, newId);
+    return newId;
+  } catch {
+    return generateUUID(); // fallback se AsyncStorage falhar
+  }
+}
 
 export function UserProvider({ children }) {
-  const [user, setUser] = useState(initialUser);
+  const [user,     setUser]     = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [syncing,  setSyncing]  = useState(false);
 
-  // 🟢 ONBOARDING
-  const completeOnboarding = (data) => {
-    setUser({
-      name: data.name || "User",
-      interests: data.interests || [],
-      xp: 50,
-      level: 1,
-      savedEvents: [],
+  // Carrega o device_id ao arrancar
+  useEffect(() => {
+    getOrCreateDeviceId().then(setDeviceId);
+  }, []);
+
+  // ── Onboarding ──────────────────────────────────────────────────────────────
+  const completeOnboarding = useCallback(async (data) => {
+    const id = deviceId ?? (await getOrCreateDeviceId());
+
+    const newUser = {
+      id,
+      name:            data.name        || 'Caçador',
+      interests:       data.interests   || [],
+      schedule:        data.schedule    || '',
+      exploration:     data.exploration || '',
+      xp:              50,
+      level:           1,
+      savedEvents:     [],
       checkedInEvents: [],
-      createdAt: new Date(),
-    });
-  };
+      createdAt:       new Date(),
+    };
 
-  // 🟢 XP SYSTEM (simples mas escalável)
-  const addXP = (amount) => {
+    setUser(newUser);
+
+    // Persiste no Supabase em background (não bloqueia o UI)
+    if (supabase) {
+      upsertProfile(id, newUser).catch(() => {});
+    }
+  }, [deviceId]);
+
+  // ── Adicionar XP ────────────────────────────────────────────────────────────
+  const addXP = useCallback((amount) => {
     setUser((prev) => {
       if (!prev) return prev;
+      const newXP    = prev.xp + amount;
+      const newLevel = Math.floor(newXP / 1000) + 1;
 
-      const newXP = prev.xp + amount;
-
-      // lógica simples de level up
-      const newLevel = Math.floor(newXP / 100) + 1;
-
-      return {
-        ...prev,
-        xp: newXP,
-        level: newLevel,
-      };
-    });
-  };
-
-  // 🟢 CHECK-IN (CORE DO MVP)
-  const checkInToEvent = (eventId) => {
-    setUser((prev) => {
-      if (!prev) return prev;
-
-      // evitar duplicados
-      if (prev.checkedInEvents.includes(eventId)) {
-        return prev;
+      // Sincroniza com Supabase em background
+      if (supabase && prev.id) {
+        addXPToProfile(prev.id, amount).catch(() => {});
       }
 
-      const updatedUser = {
-        ...prev,
-        checkedInEvents: [...prev.checkedInEvents, eventId],
-      };
-
-      return updatedUser;
+      return { ...prev, xp: newXP, level: newLevel };
     });
+  }, []);
 
-    // dar XP fora do setUser principal (mais limpo)
-    addXP(10);
-  };
+  // ── Check-in ────────────────────────────────────────────────────────────────
+  const checkInToEvent = useCallback(async (eventId) => {
+    if (!user) return { success: false };
 
-  // 🟢 GUARDAR EVENTO
-  const saveEvent = (eventId) => {
+    // Evita duplicados localmente
+    if (user.checkedInEvents.includes(eventId)) {
+      return { success: false, alreadyCheckedIn: true };
+    }
+
+    // Tenta persistir no Supabase
+    const result = await checkInService(eventId, user.id);
+
+    if (result.success || !supabase) {
+      // Atualiza estado local
+      setUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          checkedInEvents: [...prev.checkedInEvents, eventId],
+          xp:    prev.xp + 10,
+          level: Math.floor((prev.xp + 10) / 1000) + 1,
+        };
+      });
+      return { success: true, xpEarned: 10 };
+    }
+
+    return result;
+  }, [user]);
+
+  // ── Guardar / remover evento ────────────────────────────────────────────────
+  const saveEvent = useCallback((eventId) => {
+    setUser((prev) => {
+      if (!prev || prev.savedEvents.includes(eventId)) return prev;
+      return { ...prev, savedEvents: [...prev.savedEvents, eventId] };
+    });
+  }, []);
+
+  const unsaveEvent = useCallback((eventId) => {
     setUser((prev) => {
       if (!prev) return prev;
-
-      if (prev.savedEvents.includes(eventId)) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        savedEvents: [...prev.savedEvents, eventId],
-      };
+      return { ...prev, savedEvents: prev.savedEvents.filter(id => id !== eventId) };
     });
-  };
+  }, []);
 
-  // 🟢 REMOVER EVENTO GUARDADO
-  const unsaveEvent = (eventId) => {
-    setUser((prev) => {
-      if (!prev) return prev;
+  // ── Sincronizar check-ins do Supabase ao abrir a app ───────────────────────
+  const syncCheckinsFromSupabase = useCallback(async () => {
+    if (!supabase || !user?.id) return;
+    setSyncing(true);
+    try {
+      const checkins = await getUserCheckins(user.id);
+      const eventIds = checkins.map(c => c.event_id);
+      setUser(prev => prev ? { ...prev, checkedInEvents: eventIds } : prev);
+    } finally {
+      setSyncing(false);
+    }
+  }, [user?.id]);
 
-      return {
-        ...prev,
-        savedEvents: prev.savedEvents.filter((id) => id !== eventId),
-      };
-    });
-  };
+  useEffect(() => {
+    if (user?.id) syncCheckinsFromSupabase();
+  }, [user?.id]);
 
-  // 🟢 RESET (logout futuro)
-  const resetUser = () => {
-    setUser(null);
-  };
+  // ── Reset (logout) ──────────────────────────────────────────────────────────
+  const resetUser = useCallback(() => setUser(null), []);
 
   return (
     <UserContext.Provider
       value={{
         user,
-
-        // actions
+        deviceId,
+        syncing,
         setUser,
         completeOnboarding,
         addXP,
         checkInToEvent,
         saveEvent,
         unsaveEvent,
+        syncCheckinsFromSupabase,
         resetUser,
       }}
     >
@@ -123,13 +172,8 @@ export function UserProvider({ children }) {
   );
 }
 
-// 🪝 Hook (uso simples em toda a app)
 export const useUser = () => {
   const context = useContext(UserContext);
-
-  if (!context) {
-    throw new Error("useUser must be used inside UserProvider");
-  }
-
+  if (!context) throw new Error('useUser must be used inside UserProvider');
   return context;
 };

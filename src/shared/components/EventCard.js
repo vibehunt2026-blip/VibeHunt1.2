@@ -1,35 +1,16 @@
 import React, { useState } from 'react';
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, Alert, ActivityIndicator
+  View, Text, Image, TouchableOpacity, StyleSheet, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../theme/colors';
-
-// IMPORTAÇÃO DO SERVIÇO (Ajuste o caminho se necessário)
-import { checkIn } from '../../features/events/services/checkinService';
 
 const { width } = Dimensions.get('window');
 
 // Large featured card (full-width, tall)
 export function FeaturedEventCard({ event, onPress }) {
   const [saved, setSaved] = useState(event.isSaved);
-  const [loading, setLoading] = useState(false);
-
-  // FUNÇÃO DE CHECK-IN
-  const handleCheckIn = async () => {
-    try {
-      setLoading(true);
-      // Nota: Você precisará passar o ID do usuário logado aqui. 
-      // Exemplo temporário: event.userId ou pegar de um contexto de Auth
-      await checkIn(event.userId, event.id); 
-      Alert.alert("Sucesso!", "Check-in realizado com sucesso.");
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível fazer o check-in: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <TouchableOpacity style={styles.featuredCard} onPress={onPress} activeOpacity={0.92}>
@@ -65,23 +46,6 @@ export function FeaturedEventCard({ event, onPress }) {
         <View style={styles.categoryPill}>
           <Text style={styles.categoryText}>{event.categoryIcon} {event.category}</Text>
         </View>
-        
-        {/* BOTÃO DE CHECK-IN (Estilizado para o seu design) */}
-        <TouchableOpacity 
-          style={styles.checkInButton} 
-          onPress={handleCheckIn}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.white} size="small" />
-          ) : (
-            <>
-              <Ionicons name="location" size={16} color={colors.white} />
-              <Text style={styles.checkInText}>Check-in</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
         <Text style={styles.featuredTitle}>{event.title}</Text>
         <Text style={styles.featuredSub} numberOfLines={1}>{event.subtitle}</Text>
 
@@ -114,7 +78,7 @@ export function FeaturedEventCard({ event, onPress }) {
   );
 }
 
-// Compact horizontal card
+// Compact horizontal card (for carousel)
 export function CompactEventCard({ event, onPress }) {
   const [saved, setSaved] = useState(event.isSaved);
 
@@ -153,7 +117,7 @@ export function CompactEventCard({ event, onPress }) {
   );
 }
 
-// List row card
+// List row card (for "Sugerido para ti")
 export function ListEventCard({ event, onPress }) {
   const [saved, setSaved] = useState(event.isSaved);
 
@@ -174,13 +138,13 @@ export function ListEventCard({ event, onPress }) {
         </View>
         <Text style={styles.listTitle} numberOfLines={1}>{event.title}</Text>
         <Text style={styles.listVenue} numberOfLines={1}>{event.venue} · {event.distance}</Text>
-        <div style={styles.listFooter}>
+        <View style={styles.listFooter}>
           <View style={styles.listTimePill}>
             <Ionicons name="time-outline" size={11} color={colors.textSecondary} />
             <Text style={styles.listTimeText}>{event.date} {event.time}</Text>
           </View>
           <Text style={styles.listPrice}>{event.price}</Text>
-        </div>
+        </View>
       </View>
       <TouchableOpacity
         onPress={() => setSaved(!saved)}
@@ -218,7 +182,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: spacing.md,
-    zIndex: 10,
   },
   liveBadge: {
     flexDirection: 'row',
@@ -269,29 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.3,
-  },
-  // ESTILO DO BOTÃO DE CHECK-IN
-  checkInButton: {
-    position: 'absolute',
-    right: spacing.md,
-    top: -20, // Posiciona um pouco acima do texto
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-    gap: 6,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  checkInText: {
-    color: colors.white,
-    fontWeight: 'bold',
-    fontSize: 14,
   },
   featuredTitle: {
     color: colors.white,
@@ -360,31 +300,139 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Compact card (styles omitidas por brevidade, permanecem iguais)
-  compactCard: { width: 180, height: 240, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.bgCard, position: 'relative' },
-  compactImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  compactSave: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.5)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  compactBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12 },
+  // Compact card
+  compactCard: {
+    width: 180,
+    height: 240,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.bgCard,
+    position: 'relative',
+  },
+  compactImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  compactSave: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+  },
   compactEmoji: { fontSize: 18, marginBottom: 3 },
-  compactTitle: { color: colors.white, fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  compactMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  compactMetaText: { color: colors.textSecondary, fontSize: 11 },
-  compactDot: { color: colors.textMuted, fontSize: 11 },
+  compactTitle: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  compactMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  compactMetaText: {
+    color: colors.textSecondary,
+    fontSize: 11,
+  },
+  compactDot: {
+    color: colors.textMuted,
+    fontSize: 11,
+  },
 
-  // List card (styles omitidas por brevidade, permanecem iguais)
-  listCard: { flexDirection: 'row', backgroundColor: colors.bgCard, borderRadius: radius.lg, overflow: 'hidden', marginBottom: spacing.sm, alignItems: 'center' },
-  listImage: { width: 88, height: 88 },
-  listContent: { flex: 1, padding: 10 },
-  listTop: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  listCategoryPill: { backgroundColor: 'rgba(139,92,246,0.2)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.full },
-  listCategoryText: { color: colors.primaryLight, fontSize: 10, fontWeight: '700' },
-  listFriendBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(139,92,246,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
-  listFriendText: { color: colors.primary, fontSize: 10, fontWeight: '600' },
-  listTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  listVenue: { color: colors.textSecondary, fontSize: 12, marginBottom: 6 },
-  listFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  listTimePill: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  listTimeText: { color: colors.textSecondary, fontSize: 11 },
-  listPrice: { color: colors.accent, fontSize: 13, fontWeight: '800' },
-  listSaveBtn: { padding: spacing.sm, paddingRight: spacing.md },
+  // List card
+  listCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+    alignItems: 'center',
+  },
+  listImage: {
+    width: 88,
+    height: 88,
+  },
+  listContent: {
+    flex: 1,
+    padding: 10,
+  },
+  listTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  listCategoryPill: {
+    backgroundColor: 'rgba(139,92,246,0.2)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  listCategoryText: {
+    color: colors.primaryLight,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  listFriendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(139,92,246,0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  listFriendText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  listTitle: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  listVenue: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  listFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  listTimePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  listTimeText: {
+    color: colors.textSecondary,
+    fontSize: 11,
+  },
+  listPrice: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  listSaveBtn: {
+    padding: spacing.sm,
+    paddingRight: spacing.md,
+  },
 });

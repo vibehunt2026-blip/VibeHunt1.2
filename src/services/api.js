@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { mockEvents } from "../data/mockData";
 
-export const supabase = createClient (
-  'URL',
-  'KEY'
-);
+export const getEvents = async () => {
+  return mockEvents;
+};

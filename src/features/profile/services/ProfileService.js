@@ -1,8 +1,8 @@
 // src/features/profile/services/ProfileService.js
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../../../lib/supabase';
 
 export async function getProfile(userId) {
-  if (!supabase) throw new Error('[VibeHunt] Supabase não configurado');
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from('profiles')
@@ -10,12 +10,12 @@ export async function getProfile(userId) {
     .eq('id', userId)
     .single();
 
-  if (error) throw error;
+  if (error) return null;
   return normalizeProfile(data);
 }
 
 export async function upsertProfile(userId, profileData) {
-  if (!supabase) throw new Error('[VibeHunt] Supabase não configurado');
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from('profiles')
@@ -32,13 +32,45 @@ export async function upsertProfile(userId, profileData) {
         interests:   profileData.interests   ?? [],
         schedule:    profileData.schedule    ?? null,
         exploration: profileData.exploration ?? null,
+        xp:          profileData.xp          ?? 50,
+        level:       profileData.level       ?? 1,
+        updated_at:  new Date().toISOString(),
       },
       { onConflict: 'id' }
     )
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.warn('[ProfileService] upsertProfile:', error.message);
+    return null;
+  }
+  return normalizeProfile(data);
+}
+
+export async function addXPToProfile(userId, amount) {
+  if (!supabase) return null;
+
+  // Incrementa o XP e recalcula o nível (1 nível por cada 1000 XP)
+  const { data: current } = await supabase
+    .from('profiles')
+    .select('xp, level')
+    .eq('id', userId)
+    .single();
+
+  if (!current) return null;
+
+  const newXP    = (current.xp ?? 50) + amount;
+  const newLevel = Math.floor(newXP / 1000) + 1;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ xp: newXP, level: newLevel, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) return null;
   return normalizeProfile(data);
 }
 
@@ -56,7 +88,7 @@ export function normalizeProfile(raw) {
     interests:   Array.isArray(raw.interests) ? raw.interests : [],
     schedule:    raw.schedule    || '',
     exploration: raw.exploration || '',
-    xp:          raw.xp    ?? 100,
-    level:       raw.level ?? 0,
+    xp:          raw.xp          ?? 50,
+    level:       raw.level       ?? 1,
   };
 }
